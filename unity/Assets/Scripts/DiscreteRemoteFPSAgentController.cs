@@ -51,7 +51,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 		}
 
 		protected override void actionFinished(bool success) {
-			
+
 			if (actionComplete) {
 				Debug.LogError ("ActionFinished called with actionComplete already set to true");
 			}
@@ -114,7 +114,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 		private void enableImageSynthesis() {
 			imageSynthesis = this.gameObject.GetComponentInChildren<ImageSynthesis> () as ImageSynthesis;
-			imageSynthesis.enabled = true;			
+			imageSynthesis.enabled = true;
 		}
 
 		public override MetadataWrapper generateMetadataWrapper() {
@@ -137,7 +137,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 						io.objectId = so.UniqueID;
 						io.objectType = Enum.GetName (typeof(SimObjType), so.Type);
 						ios.Add(io);
-			
+
 					}
 
 			metaMessage.inventoryObjects = ios.ToArray();
@@ -158,7 +158,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 			float[] xs = new float[]{ grid_x1, grid_x1 + gridSize };
 			float[] zs = new float[]{ grid_z1, grid_z1 + gridSize };
-			List<Vector3> validMovements = new List<Vector3> (); 
+			List<Vector3> validMovements = new List<Vector3> ();
 			foreach (float x in xs ) {
 				foreach (float z in zs) {
 					this.transform.position = startingPosition;
@@ -177,7 +177,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 					for (int i = 0; i < actionDuration; i++) {
 						yield return null;
 						Vector3 diff = this.transform.position - target;
-	
+
 
 						if ((Math.Abs (diff.x) < 0.005) && (Math.Abs (diff.z) < 0.005)) {
 							validMovements.Add (movement);
@@ -214,7 +214,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 		}
 
 		private void snapToGrid() {
-			
+
 			float mult = 1 / gridSize;
 			float gridX = Convert.ToSingle (Math.Round (this.transform.position.x * mult) / mult);
 			float gridZ = Convert.ToSingle (Math.Round (this.transform.position.z * mult) / mult);
@@ -252,7 +252,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 				Vector3 currentPosition = this.transform.position;
 				Vector3 zeroY = new Vector3 (1.0f, 0.0f, 1.0f);
 				float distance = Vector3.Distance (Vector3.Scale(lastPosition, zeroY), Vector3.Scale(currentPosition, zeroY));
-				if (Math.Abs(moveMagnitude - distance) < 0.005)			
+				if (Math.Abs(moveMagnitude - distance) < 0.005)
 				{
 					currentPosition = this.transform.position;
 
@@ -268,7 +268,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 						{
 							yield return null;
 						}
-		
+
 					}
 
 					if ((currentPosition - this.transform.position).magnitude <= 0.001f){
@@ -412,7 +412,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 
 		#if UNITY_EDITOR
-            public void Update() 
+            public void Update()
             {
               if ( Input.GetKeyDown(KeyCode.BackQuote))
               {
@@ -461,7 +461,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 				if (IsOpenable (so) && response.randomizeOpen) {
 					if (rnd.NextDouble () < 0.5) {
-						openSimObj (so);	
+						openSimObj (so);
 					} else {
 						closeSimObj (so);
 					}
@@ -487,7 +487,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 				if (IsPickupable(so) && pickupable.Contains (so.Type)) {
 					double val = rnd.NextDouble ();
-	
+
 
 					if (val > response.removeProb) {
 						// Keep the item
@@ -594,7 +594,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 			Vector3 m;
 			if (actionOrientation.ContainsKey (delta)) {
 				m = actionOrientation [delta];
-				
+
 			} else {
 				actionOrientation = new Dictionary<int, Vector3> ();
 				actionOrientation.Add (0, transform.forward);
@@ -638,7 +638,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 		}
 
 		public void MaskObject(ServerAction action) {
-			
+
 			unmaskCurrent ();
 			currentMaskMaterials = new Dictionary<int, Material[]> ();
 			bool success = false;
@@ -677,7 +677,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 		public void Unmask(ServerAction action) {
 			unmaskCurrent ();
 			actionFinished (true);
-			
+
 		}
 
 		public void MoveBack(ServerAction action) {
@@ -704,7 +704,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 		public void RotateLeft(ServerAction controlCommand) {
 
-		
+
 			int index = currentHeadingAngleIndex () - 1;
 			if (index < 0) {
 				index = headingAngles.Length - 1;
@@ -723,7 +723,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 			if (index == headingAngles.Length) {
 				index = 0;
 			}
-				
+
 			float targetRotation = headingAngles [index];
 			transform.rotation = Quaternion.Euler(new Vector3(0.0f,targetRotation,0.0f));
             actionFinished(true);
@@ -751,11 +751,11 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 
 
-		public void OpenObject(ServerAction action) 
+		public void OpenObject(ServerAction action)
         {
 			bool success = false;
 			SimObj openedSimObj = null;
-			foreach (SimObj so in VisibleSimObjs(action)) 
+			foreach (SimObj so in VisibleSimObjs(action))
             {
 
 				success = openSimObj(so);
@@ -779,6 +779,90 @@ namespace UnityStandardAssets.Characters.FirstPerson
 		   StartCoroutine(checkWaitAction(success));
 		}
 
+ 		// Full -> sliced
+		public void Slice(ServerAction action)
+		{
+			if(action.objectId == null)
+			{
+				Debug.Log("no target ID given");
+				actionFinished(false);
+				return;
+			}
+
+			foreach (SimObj so in VisibleSimObjs(action))
+			{
+				if(so.UniqueID == action.objectId)
+				{
+					so.Animator.SetInteger("AnimState1", 2);
+					actionFinished(true);
+					return;
+				}
+			}
+		}
+
+		// Empty -> Filled
+		public void Fill(ServerAction action)
+		{
+			if(action.objectId == null)
+			{
+				Debug.Log("no target ID given");
+				actionFinished(false);
+				return;
+			}
+
+			foreach (SimObj so in VisibleSimObjs(action))
+			{
+				if(so.UniqueID == action.objectId)
+				{
+					so.Animator.SetInteger("AnimState1", 2);
+					actionFinished(true);
+					return;
+				}
+			}
+		}
+
+		// Filled -> Empty
+		public void UnFill(ServerAction action)
+		{
+			if(action.objectId == null)
+			{
+				Debug.Log("no target ID given");
+				actionFinished(false);
+				return;
+			}
+
+			foreach (SimObj so in VisibleSimObjs(action))
+			{
+				if(so.UniqueID == action.objectId)
+				{
+					so.Animator.SetInteger("AnimState1", 1);
+					actionFinished(true);
+					return;
+				}
+			}
+		}
+
+		// Off -> On
+		public void TurnOn(ServerAction action)
+		{
+			if(action.objectId == null)
+			{
+				Debug.Log("no target ID given");
+				actionFinished(false);
+				return;
+			}
+
+			foreach (SimObj so in VisibleSimObjs(action))
+			{
+				if(so.UniqueID == action.objectId)
+				{
+					so.Animator.SetInteger("AnimState1", 2);
+					actionFinished(true);
+					return;
+				}
+			}
+		}
+
 		public SimObj[] VisibleSimObjs(ServerAction action) {
 			List<SimObj> simObjs = new List<SimObj> ();
 
@@ -793,7 +877,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 				}
 
 				simObjs.Add (so);
-			}	
+			}
 
 
 			return simObjs.ToArray ();
@@ -874,7 +958,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 				// XXX CHECK IF OPEN
 				if (!so.IsReceptacle && !IsOpenable (so)) {
 					if (inventory.Count == 0) {
-						
+
 						addObjectInventory (so);
 						currentHandSimObj = so;
 
@@ -890,7 +974,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 						so.transform.localPosition = new Vector3 ();
 						so.hasCollision = false;
 						success = true;
-					} 
+					}
 					break;
 				}
 			}
@@ -928,7 +1012,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 			if (success) {
 				errorCode = ServerActionErrorCode.Undefined;
 			}
-			else { 
+			else {
 				if (!objectVisible) {
 					errorCode = ServerActionErrorCode.ObjectNotVisible;
 				}
@@ -940,21 +1024,21 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 		// empty target receptacle and put object into receptacle
 
-		public void Replace(ServerAction response) 
+		public void Replace(ServerAction response)
         {
 			bool success = false;
 
             SimObj[] simObjs = SceneManager.Current.ObjectsInScene.ToArray ();
-			foreach (SimObj rso in simObjs) 
+			foreach (SimObj rso in simObjs)
             {
-				if (response.receptacleObjectId == rso.UniqueID) 
+				if (response.receptacleObjectId == rso.UniqueID)
                 {
-					foreach (SimObj so in SimUtil.GetItemsFromReceptacle(rso.Receptacle)) 
+					foreach (SimObj so in SimUtil.GetItemsFromReceptacle(rso.Receptacle))
                     {
 						SimUtil.TakeItem (so);
 					}
 					foreach (SimObj so in simObjs) {
-						if (so.UniqueID == response.objectId && SimUtil.AddItemToReceptaclePivot (so, rso.Receptacle.Pivots[response.pivot])) 
+						if (so.UniqueID == response.objectId && SimUtil.AddItemToReceptaclePivot (so, rso.Receptacle.Pivots[response.pivot]))
                         {
 							success = true;
 
@@ -966,7 +1050,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 		}
 
-		public void PutObject(ServerAction response) 
+		public void PutObject(ServerAction response)
         {
 			bool success = false;
 			bool receptacleVisible = false;
@@ -987,8 +1071,8 @@ namespace UnityStandardAssets.Characters.FirstPerson
 							{
 								errorCode = ServerActionErrorCode.ReceptacleFull;
 							}
-							else { 
-							
+							else {
+
 								if (response.forceVisible)
 								{
 									SimUtil.AddItemToReceptaclePivot(so, emptyPivot);
@@ -1001,7 +1085,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 									{
 										errorCode = ServerActionErrorCode.ReceptaclePivotNotVisible;
 									}
-									else { 
+									else {
 										SimUtil.AddItemToReceptaclePivot(so, emptyPivot);
 										success = true;
 									}
@@ -1015,7 +1099,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
 
 
-						if (!success) { 
+						if (!success) {
                             addObjectInventory(so);
 						}
 
@@ -1066,7 +1150,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 				actionFinished(true);
 
 			}
-			else { 
+			else {
 				errorMessage = "can't LookDown below the min horizon angle";
 				errorCode = ServerActionErrorCode.LookDownCantExceedMin;
 				actionFinished(false);
@@ -1094,7 +1178,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
 				if (so.UniqueID == response.objectId) {
 					so.transform.position = new Vector3 (response.x, response.y, response.z);
 				}
-				
+
 			}
 			actionFinished(true);
 		}
